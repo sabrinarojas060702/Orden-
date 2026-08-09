@@ -5,10 +5,10 @@
 const STORAGE_KEYS = {
   PEOPLE: 'app_roles_people_v2',
   SCHEDULES: 'app_roles_schedules_v2',
+  MAINT_SCHEDULES: 'app_roles_maint_schedules_v2',
   HISTORY: 'app_roles_history_v2'
 };
 
-// Datos por defecto iniciales
 const DEFAULT_PEOPLE = [
   { id: 'p1', name: 'Carlos Mendoza', cargo: 'Técnico Principal', canAssign: true, countParque: 0, countOF: 0 },
   { id: 'p2', name: 'Ana Gómez', cargo: 'Inspectora', canAssign: true, countParque: 0, countOF: 0 },
@@ -28,6 +28,9 @@ class RoleStore {
     }
     if (!localStorage.getItem(STORAGE_KEYS.SCHEDULES)) {
       this.saveSchedules({});
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.MAINT_SCHEDULES)) {
+      this.saveMaintSchedules({});
     }
     if (!localStorage.getItem(STORAGE_KEYS.HISTORY)) {
       this.saveHistory([]);
@@ -100,7 +103,6 @@ class RoleStore {
     people = people.filter(p => p.id !== id);
     this.savePeople(people);
 
-    // Limpiar en cronograma activo si estaba asignado
     const schedules = this.getSchedules();
     let updatedSchedule = false;
     Object.keys(schedules).forEach(date => {
@@ -118,7 +120,7 @@ class RoleStore {
     }
   }
 
-  // --- MÉTODOS DE CRONOGRAMA ---
+  // --- CRONOGRAMA GENERAL ---
   getSchedules() {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEYS.SCHEDULES)) || {};
@@ -149,7 +151,35 @@ class RoleStore {
     this.saveSchedules(schedules);
   }
 
-  // --- MÉTODOS DE HISTORIAL ---
+  // --- CRONOGRAMA MANTENIMIENTO ---
+  getMaintSchedules() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.MAINT_SCHEDULES)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  getMaintScheduleForDate(dateStr) {
+    const maintSchedules = this.getMaintSchedules();
+    return maintSchedules[dateStr] || null;
+  }
+
+  saveMaintSchedules(schedules) {
+    localStorage.setItem(STORAGE_KEYS.MAINT_SCHEDULES, JSON.stringify(schedules));
+  }
+
+  setMaintScheduleForDate(dateStr, maintData) {
+    const maintSchedules = this.getMaintSchedules();
+    if (!maintData) {
+      delete maintSchedules[dateStr];
+    } else {
+      maintSchedules[dateStr] = maintData;
+    }
+    this.saveMaintSchedules(maintSchedules);
+  }
+
+  // --- HISTORIAL ---
   getHistory() {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY)) || [];
@@ -163,7 +193,6 @@ class RoleStore {
   }
 
   saveDayToHistory(dateStr, parquePersonId, ofPersonId, dayName = '') {
-    // Si la opción seleccionada es la cadena "null" o está vacía, se normaliza a null
     const normParqueId = (!parquePersonId || parquePersonId === 'null') ? null : parquePersonId;
     const normOfId = (!ofPersonId || ofPersonId === 'null') ? null : ofPersonId;
 
@@ -190,11 +219,8 @@ class RoleStore {
       history.push(newEntry);
     }
 
-    // Ordenar historial por fecha descendente
     history.sort((a, b) => b.date.localeCompare(a.date));
     this.saveHistory(history);
-
-    // Recalcular cargas de trabajo (los roles nulos se ignoran internamente)
     this.recalculateCountsFromHistory();
   }
 
@@ -205,7 +231,6 @@ class RoleStore {
     this.recalculateCountsFromHistory();
   }
 
-  // Recalcular acumulado de cargas basándose en el historial activo
   recalculateCountsFromHistory() {
     const people = this.getPeople();
     const history = this.getHistory();
@@ -232,10 +257,11 @@ class RoleStore {
   // --- IMPORTACIÓN / EXPORTACIÓN JSON ---
   exportJSON() {
     const data = {
-      version: '2.0',
+      version: '2.1',
       exportedAt: new Date().toISOString(),
       people: this.getPeople(),
       schedules: this.getSchedules(),
+      maintSchedules: this.getMaintSchedules(),
       history: this.getHistory()
     };
     return JSON.stringify(data, null, 2);
@@ -249,6 +275,7 @@ class RoleStore {
       }
       this.savePeople(data.people);
       this.saveSchedules(data.schedules || {});
+      this.saveMaintSchedules(data.maintSchedules || {});
       this.saveHistory(data.history || []);
       this.recalculateCountsFromHistory();
       return true;

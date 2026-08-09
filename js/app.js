@@ -6,8 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const store = window.roleStore;
   const scheduler = window.roleScheduler;
 
-  // Estado de Navegación de Fecha (Empieza en el Lunes de la semana actual)
+  // Estado de Navegación de Fecha
   let currentMonday = scheduler.getMonday(new Date());
+  let maintMonday = scheduler.getMonday(new Date());
 
   // Elementos DOM Principales
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -19,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const statEligiblePeople = document.getElementById('stat-eligible-people');
   const statTotalHistory = document.getElementById('stat-total-history');
 
-  // Schedule View Elements
+  // Vista Cronograma General
   const weekDisplayRange = document.getElementById('week-display-range');
   const scheduleGrid = document.getElementById('schedule-grid');
   const btnPrevWeek = document.getElementById('btn-prev-week');
@@ -27,20 +28,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCurrentWeek = document.getElementById('btn-current-week');
   const btnAutoGenerate = document.getElementById('btn-auto-generate');
 
-  // Personnel View Elements
+  // Vista Cronograma Mantenimiento
+  const maintWeekDisplayRange = document.getElementById('maint-week-display-range');
+  const maintScheduleGrid = document.getElementById('maint-schedule-grid');
+  const btnMaintPrevWeek = document.getElementById('btn-maint-prev-week');
+  const btnMaintNextWeek = document.getElementById('btn-maint-next-week');
+  const btnMaintCurrentWeek = document.getElementById('btn-maint-current-week');
+  const btnMaintAutoGenerate = document.getElementById('btn-maint-auto-generate');
+
+  // Vista Personal
   const personnelGrid = document.getElementById('personnel-grid');
   const btnOpenAddPerson = document.getElementById('btn-open-add-person');
 
-  // History View Elements
+  // Vista Historial
   const historyTableBody = document.getElementById('history-table-body');
   const historySearchInput = document.getElementById('history-search');
 
-  // JSON View Elements
+  // Vista JSON
   const btnExportJson = document.getElementById('btn-export-json');
   const jsonFileInput = document.getElementById('json-file-input');
   const btnImportJson = document.getElementById('btn-import-json');
 
-  // Modales y Formularios
+  // Modales
   const personModal = document.getElementById('person-modal');
   const personForm = document.getElementById('person-form');
   const personIdInput = document.getElementById('person-id-input');
@@ -57,7 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectOf = document.getElementById('select-of');
   const btnSaveToHistory = document.getElementById('btn-save-to-history');
 
-  // Modal de Rango de Fechas
+  // Modal Mantenimiento
+  const maintAssignModal = document.getElementById('maint-assign-modal');
+  const maintAssignForm = document.getElementById('maint-assign-form');
+  const maintAssignDateInput = document.getElementById('maint-assign-date-input');
+  const maintAssignDayNameInput = document.getElementById('maint-assign-dayname-input');
+  const maintAssignDateDisplay = document.getElementById('maint-assign-date-display');
+  const maintRolesFormContainer = document.getElementById('maint-roles-form-container');
+
+  // Modal Rango Fechas General
   const daterangeModal = document.getElementById('daterange-modal');
   const daterangeForm = document.getElementById('daterange-form');
   const daterangeStart = document.getElementById('daterange-start');
@@ -65,12 +82,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const daterangeInfo = document.getElementById('daterange-info');
   const daterangeInfoText = document.getElementById('daterange-info-text');
 
-  // Estado del rango activo de visualización
-  let currentViewDays = null; // null = modo semana normal
+  let currentViewDays = null;
 
-  // ==========================================================================
   // TOAST NOTIFICATIONS
-  // ==========================================================================
   function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -90,9 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3500);
   }
 
-  // ==========================================================================
-  // GESTIÓN DE PESTAÑAS (TABS)
-  // ==========================================================================
+  // TABS NAVIGATION
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetTab = btn.getAttribute('data-tab');
@@ -107,10 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetTab === 'tab-history') renderHistoryTable();
       if (targetTab === 'tab-personnel') renderPersonnelGrid();
       if (targetTab === 'tab-schedule') renderScheduleView();
+      if (targetTab === 'tab-maint-schedule') renderMaintScheduleView();
     });
   });
 
-  // Modales: Abrir / Cerrar genérico
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {
       const modalId = btn.getAttribute('data-close-modal');
@@ -119,9 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ==========================================================================
-  // ACTUALIZAR ESTADÍSTICAS DEL HEADER
-  // ==========================================================================
   function updateHeaderStats() {
     const people = store.getPeople();
     const eligible = store.getEligiblePeople();
@@ -132,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
     statTotalHistory.textContent = history.length;
   }
 
-  // Helper para renderizar texto de rol
   function getRoleDisplayText(personId, isWorking) {
     if (!isWorking) return 'No aplica';
     if (personId === 'null') return 'Ninguno (Nulo)';
@@ -141,9 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return p ? p.name : 'Sin asignar';
   }
 
-  // ==========================================================================
-  // VISTA 1: CRONOGRAMA SEMANAL
-  // ==========================================================================
+  // VISTA 1: CRONOGRAMA SEMANAL GENERAL
   function renderScheduleView() {
     const weekDays = currentViewDays || scheduler.getWeekDates(currentMonday);
     const startDateStr = weekDays[0].formatted;
@@ -160,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = `day-card ${dayObj.isToday ? 'today' : ''} ${!isWorking ? 'locked' : ''}`;
 
       const savedSchedule = store.getScheduleForDate(dayObj.dateStr);
-
       const parquePersonId = savedSchedule ? savedSchedule.parquePersonId : null;
       const ofPersonId = savedSchedule ? savedSchedule.ofPersonId : null;
 
@@ -216,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
       scheduleGrid.appendChild(card);
     });
 
-    // Listener de editar rol
     document.querySelectorAll('.btn-assign-day').forEach(btn => {
       btn.addEventListener('click', () => {
         const dateStr = btn.getAttribute('data-date');
@@ -225,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Listener de anular asignaciones del día
     document.querySelectorAll('.btn-cancel-day').forEach(btn => {
       btn.addEventListener('click', () => {
         const dateStr = btn.getAttribute('data-date');
@@ -241,7 +244,234 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHeaderStats();
   }
 
-  // Navegación Semanal
+  // VISTA 1.5: CRONOGRAMA DE MANTENIMIENTO
+  function renderMaintScheduleView() {
+    const weekDays = scheduler.getWeekDates(maintMonday);
+    const startDateStr = weekDays[0].formatted;
+    const endDateStr = weekDays[weekDays.length - 1].formatted;
+
+    maintWeekDisplayRange.textContent = `${startDateStr} — ${endDateStr}`;
+    maintScheduleGrid.innerHTML = '';
+
+    weekDays.forEach(dayObj => {
+      const isWorking = scheduler.isWorkingDay(dayObj.dateStr);
+      const statusText = scheduler.getDayStatusText(dayObj.dateStr);
+
+      const card = document.createElement('div');
+      card.className = `day-card ${dayObj.isToday ? 'today' : ''} ${!isWorking ? 'locked' : ''}`;
+
+      const savedMaint = store.getMaintScheduleForDate(dayObj.dateStr);
+
+      const renderMaintPersonsList = (personIdsArray) => {
+        if (!personIdsArray || personIdsArray.length === 0) return '<span class="unassigned">Sin asignar</span>';
+        return personIdsArray.map(id => {
+          if (id === 'null') return '<span class="unassigned">Nulo</span>';
+          const p = store.getPersonById(id);
+          return p ? `<strong>${p.name}</strong>` : '<span class="unassigned">Sin asignar</span>';
+        }).join(', ');
+      };
+
+      const svgEdit = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+      const svgCancel = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+      card.innerHTML = `
+        <div class="day-card-header">
+          <div class="day-name">${dayObj.dayName}</div>
+          <div class="day-date">${scheduler.formatReadableDate(dayObj.dateStr)}</div>
+        </div>
+
+        <div class="roles-list" style="font-size:0.82rem; display:flex; flex-direction:column; gap:6px;">
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Frente (2-3):</strong> 
+            <div>${renderMaintPersonsList(savedMaint ? savedMaint.frente : null)}</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Sala (2):</strong> 
+            <div>${renderMaintPersonsList(savedMaint ? savedMaint.sala : null)}</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Cocina (1):</strong> 
+            <div>${renderMaintPersonsList(savedMaint ? savedMaint.cocina : null)}</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Oficina (1):</strong> 
+            <div>${renderMaintPersonsList(savedMaint ? savedMaint.oficina : null)}</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">360 (1):</strong> 
+            <div>${renderMaintPersonsList(savedMaint ? savedMaint.p360 : null)}</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Ventanas (2):</strong> 
+            <div>${renderMaintPersonsList(savedMaint ? savedMaint.ventanas : null)}</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Fregadero (2):</strong> 
+            <div>${renderMaintPersonsList(savedMaint ? savedMaint.fregadero : null)}</div>
+          </div>
+        </div>
+
+        <div class="day-card-actions" style="display:flex; gap:8px; margin-top:10px;">
+          ${isWorking ? `
+            <button class="btn btn-secondary btn-sm btn-assign-maint-day" data-date="${dayObj.dateStr}" data-dayname="${dayObj.dayName}" style="flex:1;">
+              ${svgEdit} ${savedMaint ? 'Editar Mantenimiento' : 'Asignar Roles'}
+            </button>
+            <button class="btn btn-danger btn-sm btn-cancel-maint-day" data-date="${dayObj.dateStr}" title="Anular Mantenimiento">
+              ${svgCancel}
+            </button>
+          ` : `
+            <button class="btn btn-secondary btn-sm" disabled style="flex:1; cursor: not-allowed; background: var(--gray-light); border-color: var(--gray-light); color: var(--text-muted); opacity:0.6;">
+              ${statusText || 'No Laborable'}
+            </button>
+          `}
+        </div>
+      `;
+
+      maintScheduleGrid.appendChild(card);
+    });
+
+    document.querySelectorAll('.btn-assign-maint-day').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dateStr = btn.getAttribute('data-date');
+        const dayName = btn.getAttribute('data-dayname');
+        openMaintAssignModal(dateStr, dayName);
+      });
+    });
+
+    document.querySelectorAll('.btn-cancel-maint-day').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dateStr = btn.getAttribute('data-date');
+        if (confirm(`¿Anular roles de mantenimiento para el día ${scheduler.formatReadableDate(dateStr)}?`)) {
+          store.setMaintScheduleForDate(dateStr, null);
+          renderMaintScheduleView();
+          showToast(`Roles de mantenimiento anulados.`, 'warning');
+        }
+      });
+    });
+  }
+
+  // Navegación Mantenimiento
+  btnMaintPrevWeek.addEventListener('click', () => {
+    maintMonday = new Date(maintMonday);
+    maintMonday.setDate(maintMonday.getDate() - 7);
+    renderMaintScheduleView();
+  });
+
+  btnMaintNextWeek.addEventListener('click', () => {
+    maintMonday = new Date(maintMonday);
+    maintMonday.setDate(maintMonday.getDate() + 7);
+    renderMaintScheduleView();
+  });
+
+  btnMaintCurrentWeek.addEventListener('click', () => {
+    maintMonday = scheduler.getMonday(new Date());
+    renderMaintScheduleView();
+  });
+
+  btnMaintAutoGenerate.addEventListener('click', () => {
+    const weekDays = scheduler.getWeekDates(maintMonday);
+    try {
+      scheduler.generateAutoMaintScheduleForWeek(weekDays);
+      renderMaintScheduleView();
+      showToast('Mantenimiento semanal generado automáticamente considerando todo el personal.');
+    } catch (e) {
+      showToast(e.message, 'warning');
+    }
+  });
+
+  // ABRIR MODAL MANTENIMIENTO MANUAL (Flexibilidad de cupos y roles sobrantes)
+  function openMaintAssignModal(dateStr, dayName) {
+    maintAssignDateInput.value = dateStr;
+    maintAssignDayNameInput.value = dayName;
+    maintAssignDateDisplay.textContent = `${dayName}, ${scheduler.formatReadableDate(dateStr)}`;
+
+    const allPeople = store.getPeople();
+    const currentMaint = store.getMaintScheduleForDate(dateStr) || {};
+
+    maintRolesFormContainer.innerHTML = '';
+
+    // Roles definidos y sus mínimos/máximos recomendados
+    const roleDefinitions = [
+      { id: 'frente', name: 'Frente', defaultCount: 3, isFlexible: true },
+      { id: 'sala', name: 'Sala', defaultCount: 2, isFlexible: true },
+      { id: 'cocina', name: 'Cocina', defaultCount: 1, isFlexible: false },
+      { id: 'oficina', name: 'Oficina', defaultCount: 1, isFlexible: false },
+      { id: 'p360', name: '360', defaultCount: 1, isFlexible: false },
+      { id: 'ventanas', name: 'Ventanas', defaultCount: 2, isFlexible: true },
+      { id: 'fregadero', name: 'Fregadero', defaultCount: 2, isFlexible: true }
+    ];
+
+    roleDefinitions.forEach(roleDef => {
+      const existingArray = currentMaint[roleDef.id] || [];
+      const count = Math.max(roleDef.defaultCount, existingArray.length);
+
+      const fieldGroup = document.createElement('div');
+      fieldGroup.className = 'form-group';
+      fieldGroup.style.background = 'var(--bg-surface-2)';
+      fieldGroup.style.padding = '12px';
+      fieldGroup.style.borderRadius = 'var(--radius-sm)';
+
+      let selectOptionsHTML = `<option value="">-- Sin Asignar --</option><option value="null">-- Nulo --</option>`;
+      allPeople.forEach(p => {
+        selectOptionsHTML += `<option value="${p.id}">${p.name} (${p.canAssign ? 'Apto' : 'No Apto'})</option>`;
+      });
+
+      let selectsHTML = '';
+      for (let i = 0; i < count; i++) {
+        const val = existingArray[i] || '';
+        selectsHTML += `
+          <select name="maint_${roleDef.id}_${i}" class="form-select maint-select" style="margin-bottom:6px;">
+            ${selectOptionsHTML}
+          </select>
+        `;
+      }
+
+      fieldGroup.innerHTML = `
+        <label class="form-label" style="font-weight:700; color:var(--primary);">
+          ${roleDef.name} ${roleDef.isFlexible ? '(Flexible)' : '(1 Persona)'}
+        </label>
+        ${selectsHTML}
+      `;
+
+      maintRolesFormContainer.appendChild(fieldGroup);
+
+      // Asignar los valores guardados
+      for (let i = 0; i < count; i++) {
+        const sel = fieldGroup.querySelector(`[name="maint_${roleDef.id}_${i}"]`);
+        if (sel && existingArray[i]) {
+          sel.value = existingArray[i];
+        }
+      }
+    });
+
+    maintAssignModal.classList.add('active');
+  }
+
+  // Guardar Mantenimiento Manual
+  maintAssignForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const dateStr = maintAssignDateInput.value;
+
+    const roleKeys = ['frente', 'sala', 'cocina', 'oficina', 'p360', 'ventanas', 'fregadero'];
+    const newMaintData = {};
+
+    roleKeys.forEach(roleKey => {
+      newMaintData[roleKey] = [];
+      const selects = maintRolesFormContainer.querySelectorAll(`[name^="maint_${roleKey}_"]`);
+      selects.forEach(s => {
+        if (s.value) {
+          newMaintData[roleKey].push(s.value);
+        }
+      });
+    });
+
+    store.setMaintScheduleForDate(dateStr, newMaintData);
+    maintAssignModal.classList.remove('active');
+    renderMaintScheduleView();
+    showToast('Asignación de mantenimiento actualizada.');
+  });
+
+  // NAVEGACIÓN Y ACCIONES DEL CRONOGRAMA GENERAL
   btnPrevWeek.addEventListener('click', () => {
     currentViewDays = null;
     currentMonday = new Date(currentMonday);
@@ -262,7 +492,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderScheduleView();
   });
 
-  // Modal Rango de Fechas
   btnAutoGenerate.addEventListener('click', () => {
     const weekDays = scheduler.getWeekDates(currentMonday);
     daterangeStart.value = weekDays[0].dateStr;
@@ -283,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         daterangeInfo.style.display = 'block';
         daterangeInfoText.style.color = 'var(--success)';
-        daterangeInfoText.textContent = `Se generarán asignaciones para ${days.length} día${days.length !== 1 ? 's' : ''} (${days[0].dayName} ${days[0].formatted} → ${days[days.length - 1].dayName} ${days[days.length - 1].formatted}).`;
+        daterangeInfoText.textContent = `Se generarán asignaciones para ${days.length} día${days.length !== 1 ? 's' : ''}.`;
       }
     } else {
       daterangeInfo.style.display = 'none';
@@ -315,13 +544,12 @@ document.addEventListener('DOMContentLoaded', () => {
       currentMonday = scheduler.getMonday(new Date(start.replace(/-/g, '/')));
       daterangeModal.classList.remove('active');
       renderScheduleView();
-      showToast(`Cronograma generado para ${days.length} día${days.length !== 1 ? 's' : ''} de forma equitativa.`);
+      showToast(`Cronograma generado para ${days.length} día${days.length !== 1 ? 's' : ''}.`);
     } catch (err) {
       showToast(err.message, 'warning');
     }
   });
 
-  // Abrir Modal de Asignación Diaria
   function openAssignModal(dateStr, dayName) {
     assignDateInput.value = dateStr;
     assignDayNameInput.value = dayName;
@@ -367,7 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
     assignModal.classList.add('active');
   }
 
-  // Guardar en Cronograma Diario
   assignForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const dateStr = assignDateInput.value;
@@ -387,7 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Asignación diaria guardada con éxito.');
   });
 
-  // Guardar en Historial
   btnSaveToHistory.addEventListener('click', () => {
     const dateStr = assignDateInput.value;
     const dayName = assignDayNameInput.value;
@@ -412,9 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ==========================================================================
   // VISTA 2: GESTIÓN DE PERSONAL
-  // ==========================================================================
   function renderPersonnelGrid() {
     const people = store.getPeople();
     personnelGrid.innerHTML = '';
@@ -449,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="status-badge ${person.canAssign ? 'eligible' : 'restricted'}">
             ${person.canAssign
           ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Habilitado`
-          : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No puede`
+          : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No puede (Sólo Maint.)`
         }
           </span>
         </div>
@@ -487,7 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const newStatus = store.togglePersonStatus(id);
         renderPersonnelGrid();
         renderScheduleView();
-        showToast(`Aptitud de la persona actualizada a: ${newStatus ? 'Habilitado' : 'Exento'}`);
+        showToast(`Aptitud actualizada a: ${newStatus ? 'Habilitado' : 'Exento'}`);
       });
     });
 
@@ -557,9 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderScheduleView();
   });
 
-  // ==========================================================================
   // VISTA 3: HISTORIAL DE ROLES
-  // ==========================================================================
   function renderHistoryTable(query = '') {
     const history = store.getHistory();
     historyTableBody.innerHTML = '';
@@ -633,9 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistoryTable(e.target.value);
   });
 
-  // ==========================================================================
   // VISTA 4: RESPALDOS JSON
-  // ==========================================================================
   btnExportJson.addEventListener('click', () => {
     const jsonStr = store.exportJSON();
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -643,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = `roles_cronograma_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `roles_mantenimiento_backup_${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -666,6 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
         store.importJSON(content);
         jsonFileInput.value = '';
         renderScheduleView();
+        renderMaintScheduleView();
         renderPersonnelGrid();
         renderHistoryTable();
         showToast('¡Base de datos JSON restaurada con éxito!');
@@ -678,6 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // INICIALIZACIÓN DE LA APLICACIÓN
   renderScheduleView();
+  renderMaintScheduleView();
   renderPersonnelGrid();
   renderHistoryTable();
   updateHeaderStats();
