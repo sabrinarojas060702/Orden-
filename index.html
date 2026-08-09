@@ -415,7 +415,7 @@
   <div id="maint-assign-modal" class="modal-backdrop">
     <div class="modal" style="max-width: 650px;">
       <div class="modal-header">
-        <h3 class="modal-title">Asignación Manual de Mantenimiento</h3>
+        <h3 class="modal-title" id="maint-assign-title">Asignación Manual / Fija de Mantenimiento</h3>
         <button class="modal-close" data-close-modal="maint-assign-modal">&times;</button>
       </div>
       <div class="modal-body">
@@ -426,7 +426,8 @@
           <div class="info-banner">
             <strong id="maint-assign-date-display" style="color: var(--text-main);">Fecha</strong>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
-              Para Mantenimiento se incluye a <strong>todo el personal</strong> (aptos y no aptos).
+              Define personal fijo si lo requieres. Los puestos con personal fijado se bloquearán y el resto se
+              completará de forma aleatoria con personal disponible.
             </p>
           </div>
 
@@ -437,7 +438,7 @@
 
           <div class="modal-footer" style="margin-top: 20px;">
             <button type="button" class="btn btn-secondary" data-close-modal="maint-assign-modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="maint-assign-submit-btn">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />

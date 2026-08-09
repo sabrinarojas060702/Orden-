@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectOf = document.getElementById('select-of');
   const btnSaveToHistory = document.getElementById('btn-save-to-history');
 
-  // Modal Mantenimiento
+  // Modal Mantenimiento Manual
   const maintAssignModal = document.getElementById('maint-assign-modal');
   const maintAssignForm = document.getElementById('maint-assign-form');
   const maintAssignDateInput = document.getElementById('maint-assign-date-input');
@@ -281,32 +281,32 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <div class="roles-list" style="font-size:0.82rem; display:flex; flex-direction:column; gap:6px;">
-          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
-            <strong style="color:var(--primary);">Frente (2-3):</strong> 
+          <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Frente:</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.frente : null)}</div>
           </div>
-          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
-            <strong style="color:var(--primary);">Sala (2):</strong> 
+          <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Sala:</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.sala : null)}</div>
           </div>
-          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+          <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
             <strong style="color:var(--primary);">Cocina (1):</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.cocina : null)}</div>
           </div>
-          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+          <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
             <strong style="color:var(--primary);">Oficina (1):</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.oficina : null)}</div>
           </div>
-          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+          <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
             <strong style="color:var(--primary);">360 (1):</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.p360 : null)}</div>
           </div>
-          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
-            <strong style="color:var(--primary);">Ventanas (2):</strong> 
+          <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Ventanas:</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.ventanas : null)}</div>
           </div>
-          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
-            <strong style="color:var(--primary);">Fregadero (2):</strong> 
+          <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+            <strong style="color:var(--primary);">Fregadero:</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.fregadero : null)}</div>
           </div>
         </div>
@@ -368,18 +368,123 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMaintScheduleView();
   });
 
+  // BOTÓN GENERAR MANTENIMIENTO AUTOMÁTICO - MODAL ESTILIZADO
   btnMaintAutoGenerate.addEventListener('click', () => {
     const weekDays = scheduler.getWeekDates(maintMonday);
-    try {
-      scheduler.generateAutoMaintScheduleForWeek(weekDays);
-      renderMaintScheduleView();
-      showToast('Mantenimiento semanal generado automáticamente considerando todo el personal.');
-    } catch (e) {
-      showToast(e.message, 'warning');
+    const allPeople = store.getPeople();
+
+    if (allPeople.length === 0) {
+      showToast('No hay personal registrado para generar el mantenimiento.', 'warning');
+      return;
     }
+
+    openFixedPersonModal(weekDays);
   });
 
-  // ABRIR MODAL MANTENIMIENTO MANUAL (Flexibilidad de cupos y roles sobrantes)
+  // Modal Dedicado de Asignación Fija
+  function openFixedPersonModal(weekDays) {
+    const allPeople = store.getPeople();
+    const existingModal = document.getElementById('fixed-person-modal');
+    if (existingModal) existingModal.remove();
+
+    const maintRolesOptions = [
+      { id: 'frente', name: 'Frente' },
+      { id: 'sala', name: 'Sala' },
+      { id: 'cocina', name: 'Cocina' },
+      { id: 'oficina', name: 'Oficina' },
+      { id: 'p360', name: '360' },
+      { id: 'ventanas', name: 'Ventanas' },
+      { id: 'fregadero', name: 'Fregadero' }
+    ];
+
+    let personSelectHTML = `<option value="">-- Seleccionar Persona --</option>`;
+    allPeople.forEach(p => {
+      personSelectHTML += `<option value="${p.id}">${p.name} (${p.cargo})</option>`;
+    });
+
+    let roleSelectHTML = `<option value="">-- Seleccionar Posición --</option>`;
+    maintRolesOptions.forEach(r => {
+      roleSelectHTML += `<option value="${r.id}">${r.name}</option>`;
+    });
+
+    const modalHTML = `
+      <div id="fixed-person-modal">
+        <div class="modal-fixed-content">
+          <div class="modal-fixed-header">
+            <h3>Generar Mantenimiento Automático</h3>
+            <button class="modal-fixed-close" id="close-fixed-modal">&times;</button>
+          </div>
+          <form id="fixed-person-form">
+            <div class="modal-fixed-body">
+              <p class="modal-fixed-desc">
+                ¿Deseas fijar a alguien toda la semana en una posición específica? Selecciona la persona y su puesto correspondiente.
+              </p>
+              <div class="form-group">
+                <label class="form-label">Persona Fija (Opcional)</label>
+                <select id="select-fixed-person" class="form-select">
+                  ${personSelectHTML}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Posición de Mantenimiento</label>
+                <select id="select-fixed-role" class="form-select">
+                  ${roleSelectHTML}
+                </select>
+              </div>
+            </div>
+            <div class="modal-fixed-footer">
+              <button type="button" class="btn btn-secondary" id="btn-no-fixed">Generar Sin Persona Fija</button>
+              <button type="submit" class="btn btn-primary">Generar Con Puesto Fijo</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    const modal = document.getElementById('fixed-person-modal');
+    const form = document.getElementById('fixed-person-form');
+    const closeBtn = document.getElementById('close-fixed-modal');
+    const noFixedBtn = document.getElementById('btn-no-fixed');
+
+    setTimeout(() => modal.classList.add('active'), 10);
+
+    const closeModal = () => {
+      modal.classList.remove('active');
+      setTimeout(() => modal.remove(), 250);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+
+    // Generar sin persona fija
+    noFixedBtn.addEventListener('click', () => {
+      scheduler.generateAutoMaintScheduleForWeek(weekDays, null, null);
+      closeModal();
+      renderMaintScheduleView();
+      showToast('Mantenimiento semanal generado automáticamente sin puestos fijos.');
+    });
+
+    // Generar con persona fija
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const personId = document.getElementById('select-fixed-person').value;
+      const roleKey = document.getElementById('select-fixed-role').value;
+
+      if (!personId || !roleKey) {
+        showToast('Debes seleccionar tanto la persona como la posición para asignar un puesto fijo.', 'warning');
+        return;
+      }
+
+      const pObj = store.getPersonById(personId);
+      scheduler.generateAutoMaintScheduleForWeek(weekDays, personId, roleKey);
+      closeModal();
+      renderMaintScheduleView();
+      showToast(`Mantenimiento generado. ${pObj ? pObj.name : 'Persona'} quedó fijo/a en ${roleKey.toUpperCase()} toda la semana.`);
+    });
+  }
+
+  // ABRIR MODAL MANTENIMIENTO MANUAL
   function openMaintAssignModal(dateStr, dayName) {
     maintAssignDateInput.value = dateStr;
     maintAssignDayNameInput.value = dayName;
@@ -390,7 +495,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     maintRolesFormContainer.innerHTML = '';
 
-    // Roles definidos y sus mínimos/máximos recomendados
     const roleDefinitions = [
       { id: 'frente', name: 'Frente', defaultCount: 3, isFlexible: true },
       { id: 'sala', name: 'Sala', defaultCount: 2, isFlexible: true },
@@ -418,7 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let selectsHTML = '';
       for (let i = 0; i < count; i++) {
-        const val = existingArray[i] || '';
         selectsHTML += `
           <select name="maint_${roleDef.id}_${i}" class="form-select maint-select" style="margin-bottom:6px;">
             ${selectOptionsHTML}
@@ -435,7 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       maintRolesFormContainer.appendChild(fieldGroup);
 
-      // Asignar los valores guardados
       for (let i = 0; i < count; i++) {
         const sel = fieldGroup.querySelector(`[name="maint_${roleDef.id}_${i}"]`);
         if (sel && existingArray[i]) {

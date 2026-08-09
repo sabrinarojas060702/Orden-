@@ -181,12 +181,10 @@ class RoleScheduler {
     return generated;
   }
 
-  // Generación Automática Mantenimiento (Utiliza a TODOS: aptos y no aptos)
-  generateAutoMaintScheduleForWeek(weekDays) {
+  // Generación Automática de Mantenimiento con Posición y Persona Fija
+  generateAutoMaintScheduleForWeek(weekDays, fixedPersonId = null, fixedRoleKey = null) {
     const allPeople = this.store.getPeople();
     const generated = {};
-
-    let personIndex = 0;
 
     weekDays.forEach(dayObj => {
       if (!this.isWorkingDay(dayObj.dateStr)) {
@@ -201,6 +199,14 @@ class RoleScheduler {
         return;
       }
 
+      // Obtener asignación diaria previa de Parque y OF
+      const dailySchedule = this.store.getScheduleForDate(dayObj.dateStr);
+      const parqueId = dailySchedule ? dailySchedule.parquePersonId : null;
+      const ofId = dailySchedule ? dailySchedule.ofPersonId : null;
+
+      // Excluir únicamente a las personas asignadas a Parque y OF ese día
+      let availablePeople = allPeople.filter(p => p.id !== parqueId && p.id !== ofId);
+
       const dayAssignments = {
         frente: [],
         sala: [],
@@ -211,45 +217,51 @@ class RoleScheduler {
         fregadero: []
       };
 
+      // Asignar persona fija si corresponde
+      if (fixedPersonId && fixedRoleKey && dayAssignments[fixedRoleKey] !== undefined) {
+        const fixedPerson = availablePeople.find(p => p.id === fixedPersonId);
+        if (fixedPerson) {
+          dayAssignments[fixedRoleKey].push(fixedPerson.id);
+          availablePeople = availablePeople.filter(p => p.id !== fixedPersonId);
+        }
+      }
+
+      let personIdx = 0;
       const getNextPerson = () => {
-        const p = allPeople[personIndex % allPeople.length];
-        personIndex++;
+        if (availablePeople.length === 0) return 'null';
+        const p = availablePeople[personIdx % availablePeople.length];
+        personIdx++;
         return p.id;
       };
 
-      // Cupos básicos requeridos
-      // Frente (2 o 3) -> 2 base
-      dayAssignments.frente.push(getNextPerson());
-      dayAssignments.frente.push(getNextPerson());
+      // Estructura base de posiciones por cubrir
+      const baseStructure = [
+        { role: 'cocina', count: 1 },
+        { role: 'oficina', count: 1 },
+        { role: 'p360', count: 1 },
+        { role: 'frente', count: 2 },
+        { role: 'sala', count: 2 },
+        { role: 'ventanas', count: 2 },
+        { role: 'fregadero', count: 2 }
+      ];
 
-      // Sala (2)
-      dayAssignments.sala.push(getNextPerson());
-      dayAssignments.sala.push(getNextPerson());
-
-      // Cocina (1)
-      dayAssignments.cocina.push(getNextPerson());
-
-      // Oficina (1)
-      dayAssignments.oficina.push(getNextPerson());
-
-      // 360 (1)
-      dayAssignments.p360.push(getNextPerson());
-
-      // Ventanas (2)
-      dayAssignments.ventanas.push(getNextPerson());
-
-      // Fregadero (2)
-      dayAssignments.fregadero.push(getNextPerson());
-
-      // Si quedan personas sin asignar este día (sobrantes), distribuir en áreas con cupo amplio (Frente, Sala, Ventanas, Fregadero)
-      const assignedCountThisDay = 2 + 2 + 1 + 1 + 1 + 2 + 2; // 11 posiciones
-      if (allPeople.length > assignedCountThisDay) {
-        const leftover = allPeople.length - assignedCountThisDay;
-        const extraTargets = ['frente', 'sala', 'ventanas', 'fregadero'];
-        for (let i = 0; i < leftover; i++) {
-          const targetRole = extraTargets[i % extraTargets.length];
-          dayAssignments[targetRole].push(getNextPerson());
+      baseStructure.forEach(item => {
+        const currentCount = dayAssignments[item.role].length;
+        const needed = item.count - currentCount;
+        for (let i = 0; i < needed; i++) {
+          if (personIdx < availablePeople.length) {
+            dayAssignments[item.role].push(getNextPerson());
+          }
         }
+      });
+
+      // Distribuir dinámicamente al personal restante
+      const flexibleRoles = ['frente', 'sala', 'ventanas', 'fregadero'];
+      let flexIdx = 0;
+      while (personIdx < availablePeople.length) {
+        const targetRole = flexibleRoles[flexIdx % flexibleRoles.length];
+        dayAssignments[targetRole].push(getNextPerson());
+        flexIdx++;
       }
 
       this.store.setMaintScheduleForDate(dayObj.dateStr, dayAssignments);
