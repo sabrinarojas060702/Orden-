@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Asignación de Roles Diarios | Parque &amp; OF de Día</title>
+  <meta name="description"
+    content="Sistema interactivo para la asignación y gestión de roles diarios (Parque y OF de Día) con restricciones de aptitud, historial y respaldos JSON.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+  <div class="app-container">
+
+    <!-- Encabezado Principal -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <!-- Schedule / Grid icon -->
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Asignación de Roles</h1>
+          <p class="brand-subtitle">Control semanal de Parque y OF de Día</p>
+        </div>
+      </div>
+
+      <div class="header-stats">
+        <div class="stat-pill">
+          <span class="stat-icon">
+            <!-- Users icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </span>
+          <div>
+            <div class="stat-value" id="stat-total-people">0</div>
+            <div class="stat-label">Personal</div>
+          </div>
+        </div>
+
+        <div class="stat-pill">
+          <span class="stat-icon">
+            <!-- Check-circle icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </span>
+          <div>
+            <div class="stat-value" id="stat-eligible-people">0</div>
+            <div class="stat-label">Habilitados</div>
+          </div>
+        </div>
+
+        <div class="stat-pill">
+          <span class="stat-icon">
+            <!-- Clock / History icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </span>
+          <div>
+            <div class="stat-value" id="stat-total-history">0</div>
+            <div class="stat-label">Días en Historial</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navegación por Pestañas -->
+    <nav class="tabs-nav" role="tablist">
+      <button class="tab-btn active" data-tab="tab-schedule">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        Cronograma Semanal
+      </button>
+      <button class="tab-btn" data-tab="tab-personnel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        Gestión de Personal
+      </button>
+      <button class="tab-btn" data-tab="tab-history">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h18v18H3z" rx="2" />
+          <line x1="3" y1="9" x2="21" y2="9" />
+          <line x1="3" y1="15" x2="21" y2="15" />
+          <line x1="9" y1="9" x2="9" y2="21" />
+        </svg>
+        Historial Guardado
+      </button>
+      <button class="tab-btn" data-tab="tab-json">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </svg>
+        Respaldos JSON
+      </button>
+    </nav>
+
+    <!-- VISTA 1: CRONOGRAMA SEMANAL -->
+    <section id="tab-schedule" class="tab-content active">
+      <div class="control-bar">
+        <div class="week-selector">
+          <button id="btn-prev-week" class="btn btn-secondary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Sem. Anterior
+          </button>
+          <span id="week-display-range" class="week-display">Semana Actual</span>
+          <button id="btn-next-week" class="btn btn-secondary btn-sm">
+            Sem. Siguiente
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+          <button id="btn-current-week" class="btn btn-secondary btn-sm">Hoy</button>
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button id="btn-auto-generate" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            Generar Semana Automática
+          </button>
+        </div>
+      </div>
+
+      <!-- Rejilla de tarjetas de días -->
+      <div id="schedule-grid" class="schedule-grid">
+        <!-- Renderizado dinámico desde JS -->
+      </div>
+    </section>
+
+    <!-- VISTA 2: GESTIÓN DE PERSONAL -->
+    <section id="tab-personnel" class="tab-content">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Registro de Personal Involucrado
+        </h2>
+        <button id="btn-open-add-person" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Agregar Persona
+        </button>
+      </div>
+
+      <!-- Tarjetas de Personal -->
+      <div id="personnel-grid" class="personnel-grid">
+        <!-- Renderizado dinámico desde JS -->
+      </div>
+    </section>
+
+    <!-- VISTA 3: HISTORIAL DE ROLES -->
+    <section id="tab-history" class="tab-content">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          Historial Completo de Roles Cumplidos
+        </h2>
+        <div style="max-width: 300px; width: 100%; position: relative;">
+          <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); pointer-events:none;"
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9BBAA8" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="text" id="history-search" class="form-control search-input"
+            placeholder="Buscar por nombre o fecha...">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Fecha / Día</th>
+              <th>Rol: Parque</th>
+              <th>Rol: OF de Día</th>
+              <th>Fecha de Registro</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body">
+            <!-- Renderizado dinámico desde JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VISTA 4: RESPALDOS JSON -->
+    <section id="tab-json" class="tab-content">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          </svg>
+          Gestión de Base de Datos y Archivos JSON
+        </h2>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+        <div class="json-card">
+          <div class="json-card-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </div>
+          <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Exportar Datos</h3>
+          <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 20px;">
+            Descarga una copia completa de las personas, roles asignados e historial en un archivo estructurado
+            <code>.json</code>.
+          </p>
+          <button id="btn-export-json" class="btn btn-success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Descargar Backup (.json)
+          </button>
+        </div>
+
+        <div class="json-card">
+          <div class="json-card-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          </div>
+          <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Importar Datos</h3>
+          <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 16px;">
+            Carga un archivo de respaldo JSON previo para restaurar o actualizar el sistema.
+          </p>
+          <input type="file" id="json-file-input" accept=".json" class="form-control" style="margin-bottom: 14px;">
+          <button id="btn-import-json" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 .49-3.25" />
+            </svg>
+            Importar Archivo
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- MODAL: ASIGNAR / EDITAR ROL DIARIO -->
+  <div id="assign-modal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="assign-modal-title">Asignar Roles Diarios</h3>
+        <button class="modal-close" data-close-modal="assign-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="assign-form">
+          <input type="hidden" id="assign-date-input">
+          <input type="hidden" id="assign-dayname-input">
+
+          <div class="info-banner">
+            <strong id="assign-date-display" style="color: var(--text-main);">Fecha</strong>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+              Recuerda: Cada rol requiere una persona diferente y habilitada o una opción nula.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="select-parque">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              Rol: Parque
+            </label>
+            <select id="select-parque" class="form-select">
+              <!-- Dinámico desde JS -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="select-of">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+              Rol: OF de Día
+            </label>
+            <select id="select-of" class="form-select">
+              <!-- Dinámico desde JS -->
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close-modal="assign-modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              Guardar Día
+            </button>
+            <button type="button" id="btn-save-to-history" class="btn btn-success">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              Guardar en Historial
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AGREGAR / EDITAR PERSONA -->
+  <div id="person-modal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="person-modal-title">Agregar Nueva Persona</h3>
+        <button class="modal-close" data-close-modal="person-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="person-form">
+          <input type="hidden" id="person-id-input">
+
+          <div class="form-group">
+            <label class="form-label" for="person-name-input">Nombre y Apellido</label>
+            <input type="text" id="person-name-input" class="form-control" placeholder="Ej. Juan Pérez" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="person-cargo-input">Cargo / Rango / Descripción</label>
+            <input type="text" id="person-cargo-input" class="form-control" placeholder="Ej. Técnico Operativo">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Condición / Aptitud de Rol</label>
+            <div class="radio-group">
+              <label class="radio-card">
+                <input type="radio" name="person-can-assign" value="true" checked>
+                <span class="radio-label eligible-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  PUEDE asumir roles
+                </span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="person-can-assign" value="false">
+                <span class="radio-label restricted-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                  </svg>
+                  NO puede asumir roles
+                </span>
+              </label>
+            </div>
+            <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 6px;">
+              * Si se marca como "NO puede", el sistema lo excluye automáticamente del cronograma y rotaciones.
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close-modal="person-modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              Guardar Persona
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECCIÓN DE RANGO DE FECHAS PARA GENERACIÓN -->
+  <div id="daterange-modal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display:flex; align-items:center; gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          Generar Cronograma Automático
+        </h3>
+        <button class="modal-close" data-close-modal="daterange-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-banner" style="margin-bottom: 20px;">
+          <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.6;">
+            Selecciona el período para el cual deseas generar las asignaciones automáticas de roles.
+            El sistema distribuirá equitativamente los roles entre el personal habilitado.
+          </p>
+        </div>
+
+        <form id="daterange-form">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="daterange-start">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Fecha de Inicio
+              </label>
+              <input type="date" id="daterange-start" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="daterange-end">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Fecha de Fin
+              </label>
+              <input type="date" id="daterange-end" class="form-control" required>
+            </div>
+          </div>
+
+          <div id="daterange-info"
+            style="margin-top: 16px; padding: 12px; background: rgba(72,174,120,0.08); border: 1px solid rgba(72,174,120,0.25); border-radius: var(--radius-sm); display: none;">
+            <span id="daterange-info-text" style="font-size: 0.85rem; color: var(--primary);"></span>
+          </div>
+
+          <div class="modal-footer" style="padding: 0; margin-top: 24px; border-top: none;">
+            <button type="button" class="btn btn-secondary" data-close-modal="daterange-modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              Generar Cronograma
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts JavaScript (Vanilla JS) -->
+  <script src="js/store.js"></script>
+  <script src="js/scheduler.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
