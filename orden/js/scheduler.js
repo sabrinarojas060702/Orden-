@@ -9,7 +9,6 @@ class RoleScheduler {
     this.store = store;
   }
 
-  // Obtener lunes de la semana que contiene una fecha
   getMonday(d) {
     const date = new Date(d);
     const day = date.getDay();
@@ -17,7 +16,6 @@ class RoleScheduler {
     return new Date(date.setDate(diff));
   }
 
-  // Formatear Date a YYYY-MM-DD
   formatYYYYMMDD(dateObj) {
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -25,7 +23,6 @@ class RoleScheduler {
     return `${year}-${month}-${day}`;
   }
 
-  // Formatear para mostrar en interfaz
   formatReadableDate(dateStr) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
@@ -33,7 +30,6 @@ class RoleScheduler {
     return date.toLocaleDateString('es-ES', options);
   }
 
-  // Generar array de los 7 días de la semana
   getWeekDates(mondayDate) {
     const week = [];
     const start = new Date(mondayDate);
@@ -53,7 +49,6 @@ class RoleScheduler {
     return week;
   }
 
-  // Generar array de días entre dos fechas
   getDatesInRange(startDateStr, endDateStr) {
     const days = [];
     const [sy, sm, sd] = startDateStr.split('-').map(Number);
@@ -77,9 +72,7 @@ class RoleScheduler {
     return days;
   }
 
-  // Validar asignación de un día
   validateAssignment(parqueId, ofId) {
-    // Si ambos tienen una persona seleccionada (no nulos) y es la misma persona
     if (parqueId && ofId && parqueId !== 'null' && ofId !== 'null' && parqueId === ofId) {
       return { valid: false, message: '¡Atención! La misma persona no puede asumir los dos roles en el mismo día.' };
     }
@@ -101,7 +94,6 @@ class RoleScheduler {
     return { valid: true };
   }
 
-  // Determinar si una fecha (YYYY-MM-DD) es laborable
   isWorkingDay(dateStr) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
@@ -116,11 +108,9 @@ class RoleScheduler {
     const diffWeeks = Math.round(diffTime / (7 * 24 * 60 * 60 * 1000));
 
     const isWorkWeek = Math.abs(diffWeeks) % 2 === 1;
-
     return isWorkWeek;
   }
 
-  // Texto del estado del día
   getDayStatusText(dateStr) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
@@ -142,7 +132,6 @@ class RoleScheduler {
     return '';
   }
 
-  // Generación Automática
   generateAutoScheduleForWeek(weekDays) {
     const eligiblePeople = this.store.getEligiblePeople();
     const workingDays = weekDays.filter(day => this.isWorkingDay(day.dateStr));
@@ -187,6 +176,84 @@ class RoleScheduler {
 
       this.store.setScheduleForDate(dayObj.dateStr, pPerson.id, oPerson.id);
       generated[dayObj.dateStr] = { parquePersonId: pPerson.id, ofPersonId: oPerson.id };
+    });
+
+    return generated;
+  }
+
+  // Generación Automática Mantenimiento (Utiliza a TODOS: aptos y no aptos)
+  generateAutoMaintScheduleForWeek(weekDays) {
+    const allPeople = this.store.getPeople();
+    const generated = {};
+
+    let personIndex = 0;
+
+    weekDays.forEach(dayObj => {
+      if (!this.isWorkingDay(dayObj.dateStr)) {
+        this.store.setMaintScheduleForDate(dayObj.dateStr, null);
+        generated[dayObj.dateStr] = null;
+        return;
+      }
+
+      if (allPeople.length === 0) {
+        this.store.setMaintScheduleForDate(dayObj.dateStr, null);
+        generated[dayObj.dateStr] = null;
+        return;
+      }
+
+      const dayAssignments = {
+        frente: [],
+        sala: [],
+        cocina: [],
+        oficina: [],
+        p360: [],
+        ventanas: [],
+        fregadero: []
+      };
+
+      const getNextPerson = () => {
+        const p = allPeople[personIndex % allPeople.length];
+        personIndex++;
+        return p.id;
+      };
+
+      // Cupos básicos requeridos
+      // Frente (2 o 3) -> 2 base
+      dayAssignments.frente.push(getNextPerson());
+      dayAssignments.frente.push(getNextPerson());
+
+      // Sala (2)
+      dayAssignments.sala.push(getNextPerson());
+      dayAssignments.sala.push(getNextPerson());
+
+      // Cocina (1)
+      dayAssignments.cocina.push(getNextPerson());
+
+      // Oficina (1)
+      dayAssignments.oficina.push(getNextPerson());
+
+      // 360 (1)
+      dayAssignments.p360.push(getNextPerson());
+
+      // Ventanas (2)
+      dayAssignments.ventanas.push(getNextPerson());
+
+      // Fregadero (2)
+      dayAssignments.fregadero.push(getNextPerson());
+
+      // Si quedan personas sin asignar este día (sobrantes), distribuir en áreas con cupo amplio (Frente, Sala, Ventanas, Fregadero)
+      const assignedCountThisDay = 2 + 2 + 1 + 1 + 1 + 2 + 2; // 11 posiciones
+      if (allPeople.length > assignedCountThisDay) {
+        const leftover = allPeople.length - assignedCountThisDay;
+        const extraTargets = ['frente', 'sala', 'ventanas', 'fregadero'];
+        for (let i = 0; i < leftover; i++) {
+          const targetRole = extraTargets[i % extraTargets.length];
+          dayAssignments[targetRole].push(getNextPerson());
+        }
+      }
+
+      this.store.setMaintScheduleForDate(dayObj.dateStr, dayAssignments);
+      generated[dayObj.dateStr] = dayAssignments;
     });
 
     return generated;

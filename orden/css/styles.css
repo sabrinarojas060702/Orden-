@@ -1121,9 +1121,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     align-items: flex-start;
   }
 
+  .btn-primary {
+    margin: auto;
+  }
+
   .header-stats {
     width: 100%;
-    overflow-x: auto;
+
   }
 
   .stat-pill {
@@ -1135,9 +1139,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   .tab-btn {
-    min-width: 130px;
+    min-width: 50px;
     font-size: 0.82rem;
   }
+
+  .svgtab {
+    display: none;
+  }
+
 
   .control-bar {
     flex-direction: column;
@@ -1145,7 +1154,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   .week-selector {
-    flex-wrap: wrap;
+
     justify-content: center;
   }
 
@@ -1161,5 +1170,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
   .radio-group {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 510px) {
+  .header-stats {
+    flex-direction: column;
+  }
+
+  .textoResponsive {
+    display: none;
   }
 }
