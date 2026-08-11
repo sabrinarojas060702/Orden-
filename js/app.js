@@ -6,21 +6,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const store = window.roleStore;
   const scheduler = window.roleScheduler;
 
-  // Estado de Navegación de Fecha
   let currentMonday = scheduler.getMonday(new Date());
   let maintMonday = scheduler.getMonday(new Date());
 
-  // Elementos DOM Principales
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
   const toastContainer = document.getElementById('toast-container');
 
-  // Stats Header
   const statTotalPeople = document.getElementById('stat-total-people');
   const statEligiblePeople = document.getElementById('stat-eligible-people');
   const statTotalHistory = document.getElementById('stat-total-history');
 
-  // Vista Cronograma General
   const weekDisplayRange = document.getElementById('week-display-range');
   const scheduleGrid = document.getElementById('schedule-grid');
   const btnPrevWeek = document.getElementById('btn-prev-week');
@@ -28,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCurrentWeek = document.getElementById('btn-current-week');
   const btnAutoGenerate = document.getElementById('btn-auto-generate');
 
-  // Vista Cronograma Mantenimiento
   const maintWeekDisplayRange = document.getElementById('maint-week-display-range');
   const maintScheduleGrid = document.getElementById('maint-schedule-grid');
   const btnMaintPrevWeek = document.getElementById('btn-maint-prev-week');
@@ -36,20 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnMaintCurrentWeek = document.getElementById('btn-maint-current-week');
   const btnMaintAutoGenerate = document.getElementById('btn-maint-auto-generate');
 
-  // Vista Personal
   const personnelGrid = document.getElementById('personnel-grid');
   const btnOpenAddPerson = document.getElementById('btn-open-add-person');
 
-  // Vista Historial
   const historyTableBody = document.getElementById('history-table-body');
   const historySearchInput = document.getElementById('history-search');
 
-  // Vista JSON
   const btnExportJson = document.getElementById('btn-export-json');
   const jsonFileInput = document.getElementById('json-file-input');
   const btnImportJson = document.getElementById('btn-import-json');
 
-  // Modales
   const personModal = document.getElementById('person-modal');
   const personForm = document.getElementById('person-form');
   const personIdInput = document.getElementById('person-id-input');
@@ -66,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectOf = document.getElementById('select-of');
   const btnSaveToHistory = document.getElementById('btn-save-to-history');
 
-  // Modal Mantenimiento Manual
   const maintAssignModal = document.getElementById('maint-assign-modal');
   const maintAssignForm = document.getElementById('maint-assign-form');
   const maintAssignDateInput = document.getElementById('maint-assign-date-input');
@@ -74,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const maintAssignDateDisplay = document.getElementById('maint-assign-date-display');
   const maintRolesFormContainer = document.getElementById('maint-roles-form-container');
 
-  // Modal Rango Fechas General
   const daterangeModal = document.getElementById('daterange-modal');
   const daterangeForm = document.getElementById('daterange-form');
   const daterangeStart = document.getElementById('daterange-start');
@@ -83,6 +72,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const daterangeInfoText = document.getElementById('daterange-info-text');
 
   let currentViewDays = null;
+
+  // MINI MODAL DE CONFIRMACIÓN DE PROCEDIMIENTO
+  function showConfirmModal(title, message, onConfirm) {
+    const existingModal = document.getElementById('custom-confirm-modal');
+    if (existingModal) existingModal.remove();
+
+    const modalHTML = `
+      <div id="custom-confirm-modal" class="modal-backdrop active" style="z-index: 9999;">
+        <div class="modal" style="max-width: 400px; text-align: center; padding: 24px;">
+          <h3 style="margin-bottom: 12px; font-size: 1.15rem; color: var(--text-main);">${title}</h3>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4;">${message}</p>
+          <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="confirm-btn-cancel" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+            <button id="confirm-btn-accept" class="btn btn-danger" style="flex: 1;">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modalEl = document.getElementById('custom-confirm-modal');
+    const cancelBtn = document.getElementById('confirm-btn-cancel');
+    const acceptBtn = document.getElementById('confirm-btn-accept');
+
+    const closeModal = () => {
+      modalEl.classList.remove('active');
+      setTimeout(() => modalEl.remove(), 200);
+    };
+
+    cancelBtn.addEventListener('click', closeModal);
+    acceptBtn.addEventListener('click', () => {
+      closeModal();
+      onConfirm();
+    });
+  }
 
   // TOAST NOTIFICATIONS
   function showToast(message, type = 'success') {
@@ -104,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3500);
   }
 
-  // TABS NAVIGATION
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetTab = btn.getAttribute('data-tab');
@@ -149,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return p ? p.name : 'Sin asignar';
   }
 
-  // VISTA 1: CRONOGRAMA SEMANAL GENERAL
   function renderScheduleView() {
     const weekDays = currentViewDays || scheduler.getWeekDates(currentMonday);
     const startDateStr = weekDays[0].formatted;
@@ -232,19 +254,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-cancel-day').forEach(btn => {
       btn.addEventListener('click', () => {
         const dateStr = btn.getAttribute('data-date');
-        if (confirm(`¿Estás seguro de anular las asignaciones para el día ${scheduler.formatReadableDate(dateStr)}?`)) {
-          store.setScheduleForDate(dateStr, null, null);
-          renderScheduleView();
-          renderPersonnelGrid();
-          showToast(`Asignaciones anuladas para el ${scheduler.formatReadableDate(dateStr)}.`, 'warning');
-        }
+        showConfirmModal(
+          'Anular Asignación',
+          `¿Estás seguro de anular las asignaciones para el día ${scheduler.formatReadableDate(dateStr)}?`,
+          () => {
+            store.setScheduleForDate(dateStr, null, null);
+            renderScheduleView();
+            renderPersonnelGrid();
+            showToast(`Asignaciones anuladas para el ${scheduler.formatReadableDate(dateStr)}.`, 'warning');
+          }
+        );
       });
     });
 
     updateHeaderStats();
   }
 
-  // VISTA 1.5: CRONOGRAMA DE MANTENIMIENTO
   function renderMaintScheduleView() {
     const weekDays = scheduler.getWeekDates(maintMonday);
     const startDateStr = weekDays[0].formatted;
@@ -298,11 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.oficina : null)}</div>
           </div>
           <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
-            <strong style="color:var(--primary);">360 (1):</strong> 
+            <strong style="color:var(--primary);">Laterales (1):</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.p360 : null)}</div>
           </div>
           <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
-            <strong style="color:var(--primary);">Ventanas:</strong> 
+            <strong style="color:var(--primary);">Ventanas y 360:</strong> 
             <div>${renderMaintPersonsList(savedMaint ? savedMaint.ventanas : null)}</div>
           </div>
           <div style="background:var(--bg-surface-2); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
@@ -341,16 +366,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-cancel-maint-day').forEach(btn => {
       btn.addEventListener('click', () => {
         const dateStr = btn.getAttribute('data-date');
-        if (confirm(`¿Anular roles de mantenimiento para el día ${scheduler.formatReadableDate(dateStr)}?`)) {
-          store.setMaintScheduleForDate(dateStr, null);
-          renderMaintScheduleView();
-          showToast(`Roles de mantenimiento anulados.`, 'warning');
-        }
+        showConfirmModal(
+          'Anular Mantenimiento',
+          `¿Deseas anular los roles de mantenimiento para el día ${scheduler.formatReadableDate(dateStr)}?`,
+          () => {
+            store.setMaintScheduleForDate(dateStr, null);
+            renderMaintScheduleView();
+            showToast(`Roles de mantenimiento anulados.`, 'warning');
+          }
+        );
       });
     });
   }
 
-  // Navegación Mantenimiento
   btnMaintPrevWeek.addEventListener('click', () => {
     maintMonday = new Date(maintMonday);
     maintMonday.setDate(maintMonday.getDate() - 7);
@@ -368,7 +396,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMaintScheduleView();
   });
 
-  // BOTÓN GENERAR MANTENIMIENTO AUTOMÁTICO - MODAL ESTILIZADO
   btnMaintAutoGenerate.addEventListener('click', () => {
     const weekDays = scheduler.getWeekDates(maintMonday);
     const allPeople = store.getPeople();
@@ -381,7 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
     openFixedPersonModal(weekDays);
   });
 
-  // Modal Dedicado de Asignación Fija
   function openFixedPersonModal(weekDays) {
     const allPeople = store.getPeople();
     const existingModal = document.getElementById('fixed-person-modal');
@@ -408,15 +434,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const modalHTML = `
-      <div id="fixed-person-modal">
-        <div class="modal-fixed-content">
-          <div class="modal-fixed-header">
-            <h3>Generar Mantenimiento Automático</h3>
-            <button class="modal-fixed-close" id="close-fixed-modal">&times;</button>
+      <div id="fixed-person-modal" class="modal-backdrop">
+        <div class="modal" style="max-width: 480px;">
+          <div class="modal-header">
+            <h3 class="modal-title">Generar Mantenimiento Automático</h3>
+            <button class="modal-close" id="close-fixed-modal">&times;</button>
           </div>
           <form id="fixed-person-form">
-            <div class="modal-fixed-body">
-              <p class="modal-fixed-desc">
+            <div class="modal-body">
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
                 ¿Deseas fijar a alguien toda la semana en una posición específica? Selecciona la persona y su puesto correspondiente.
               </p>
               <div class="form-group">
@@ -432,8 +458,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </select>
               </div>
             </div>
-            <div class="modal-fixed-footer">
-              <button type="button" class="btn btn-secondary" id="btn-no-fixed">Generar Sin Persona Fija</button>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" id="btn-no-fixed">Sin Persona Fija</button>
               <button type="submit" class="btn btn-primary">Generar Con Puesto Fijo</button>
             </div>
           </form>
@@ -457,7 +483,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeBtn.addEventListener('click', closeModal);
 
-    // Generar sin persona fija
     noFixedBtn.addEventListener('click', () => {
       scheduler.generateAutoMaintScheduleForWeek(weekDays, null, null);
       closeModal();
@@ -465,7 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Mantenimiento semanal generado automáticamente sin puestos fijos.');
     });
 
-    // Generar con persona fija
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const personId = document.getElementById('select-fixed-person').value;
@@ -484,7 +508,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ABRIR MODAL MANTENIMIENTO MANUAL
   function openMaintAssignModal(dateStr, dayName) {
     maintAssignDateInput.value = dateStr;
     maintAssignDayNameInput.value = dayName;
@@ -549,7 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
     maintAssignModal.classList.add('active');
   }
 
-  // Guardar Mantenimiento Manual
   maintAssignForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const dateStr = maintAssignDateInput.value;
@@ -573,7 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Asignación de mantenimiento actualizada.');
   });
 
-  // NAVEGACIÓN Y ACCIONES DEL CRONOGRAMA GENERAL
   btnPrevWeek.addEventListener('click', () => {
     currentViewDays = null;
     currentMonday = new Date(currentMonday);
@@ -740,7 +761,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // VISTA 2: GESTIÓN DE PERSONAL
   function renderPersonnelGrid() {
     const people = store.getPeople();
     personnelGrid.innerHTML = '';
@@ -828,12 +848,16 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         const person = store.getPersonById(id);
-        if (confirm(`¿Estás seguro de eliminar a ${person ? person.name : 'esta persona'}?`)) {
-          store.deletePerson(id);
-          renderPersonnelGrid();
-          renderScheduleView();
-          showToast('Persona eliminada correctamente.', 'warning');
-        }
+        showConfirmModal(
+          'Eliminar Persona',
+          `¿Estás seguro de eliminar a ${person ? person.name : 'esta persona'} del registro?`,
+          () => {
+            store.deletePerson(id);
+            renderPersonnelGrid();
+            renderScheduleView();
+            showToast('Persona eliminada correctamente.', 'warning');
+          }
+        );
       });
     });
 
@@ -883,7 +907,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderScheduleView();
   });
 
-  // VISTA 3: HISTORIAL DE ROLES
   function renderHistoryTable(query = '') {
     const history = store.getHistory();
     historyTableBody.innerHTML = '';
@@ -940,13 +963,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-delete-history').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
-        if (confirm('¿Deseas eliminar este registro del historial?')) {
-          store.deleteHistoryEntry(id);
-          renderHistoryTable(historySearchInput.value);
-          renderScheduleView();
-          renderPersonnelGrid();
-          showToast('Registro eliminado del historial.', 'warning');
-        }
+        showConfirmModal(
+          'Borrar Registro de Historial',
+          '¿Deseas eliminar este registro de manera permanente?',
+          () => {
+            store.deleteHistoryEntry(id);
+            renderHistoryTable(historySearchInput.value);
+            renderScheduleView();
+            renderPersonnelGrid();
+            showToast('Registro eliminado del historial.', 'warning');
+          }
+        );
       });
     });
 
@@ -957,7 +984,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistoryTable(e.target.value);
   });
 
-  // VISTA 4: RESPALDOS JSON
   btnExportJson.addEventListener('click', () => {
     const jsonStr = store.exportJSON();
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -999,7 +1025,6 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsText(file);
   });
 
-  // INICIALIZACIÓN DE LA APLICACIÓN
   renderScheduleView();
   renderMaintScheduleView();
   renderPersonnelGrid();

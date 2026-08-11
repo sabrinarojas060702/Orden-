@@ -181,7 +181,7 @@ class RoleScheduler {
     return generated;
   }
 
-  // Generación Automática de Mantenimiento con Posición y Persona Fija
+  // Generación Automática de Mantenimiento manteniendo personal fijo durante toda la semana
   generateAutoMaintScheduleForWeek(weekDays, fixedPersonId = null, fixedRoleKey = null) {
     const allPeople = this.store.getPeople();
     const generated = {};
@@ -199,12 +199,10 @@ class RoleScheduler {
         return;
       }
 
-      // Obtener asignación diaria previa de Parque y OF
       const dailySchedule = this.store.getScheduleForDate(dayObj.dateStr);
       const parqueId = dailySchedule ? dailySchedule.parquePersonId : null;
       const ofId = dailySchedule ? dailySchedule.ofPersonId : null;
 
-      // Excluir únicamente a las personas asignadas a Parque y OF ese día
       let availablePeople = allPeople.filter(p => p.id !== parqueId && p.id !== ofId);
 
       const dayAssignments = {
@@ -217,13 +215,10 @@ class RoleScheduler {
         fregadero: []
       };
 
-      // Asignar persona fija si corresponde
+      // Fija al personal en la posición asignada toda la semana
       if (fixedPersonId && fixedRoleKey && dayAssignments[fixedRoleKey] !== undefined) {
-        const fixedPerson = availablePeople.find(p => p.id === fixedPersonId);
-        if (fixedPerson) {
-          dayAssignments[fixedRoleKey].push(fixedPerson.id);
-          availablePeople = availablePeople.filter(p => p.id !== fixedPersonId);
-        }
+        dayAssignments[fixedRoleKey].push(fixedPersonId);
+        availablePeople = availablePeople.filter(p => p.id !== fixedPersonId);
       }
 
       let personIdx = 0;
@@ -234,7 +229,6 @@ class RoleScheduler {
         return p.id;
       };
 
-      // Estructura base de posiciones por cubrir
       const baseStructure = [
         { role: 'cocina', count: 1 },
         { role: 'oficina', count: 1 },
@@ -255,7 +249,6 @@ class RoleScheduler {
         }
       });
 
-      // Distribuir dinámicamente al personal restante
       const flexibleRoles = ['frente', 'sala', 'ventanas', 'fregadero'];
       let flexIdx = 0;
       while (personIdx < availablePeople.length) {
